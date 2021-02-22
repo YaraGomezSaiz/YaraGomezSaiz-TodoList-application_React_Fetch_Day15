@@ -6,7 +6,9 @@ export function Home() {
 	const [todo, setTodo] = useState("");
 	const [newTodo, setNewTodo] = useState("");
 	const [updateTodo, setUpdateTodo] = useState("");
-	
+	const [deleteResult, setDeleteResult] = useState("");
+	const [deleteAllResult, setDeleteAllResult] = useState("");
+
 	let BaseURL = "https://jsonplaceholder.typicode.com/";
 
 	// OBTENER LISTADO COMPLETO AL CARGAR LA PAGINA
@@ -61,23 +63,15 @@ export function Home() {
 	// ACTUALIZAR EL VALOR DE UNA TAREA EXISTENTE
 
 	// Al pulsar enter sobre el propio input modificado se actualiza su valor
-	function updateTodoData(event) {
-		if (event.key === "Enter") {
-			setTodo(newTodo);
-			UpdateTodoItem(newTodo);
-		}
-	}
 
 	//method: PUT para actualizar un elemento
 
-	function UpdateTodoItem(newTodo) {
-		let index = saveIndex;
-
-		fetch(BaseURL + "todos/1", {
+	function UpdateTodoItem(title, id, todoItem) {
+		fetch(BaseURL + "todos/" + id, {
 			method: "PUT",
 			body: JSON.stringify({
-				id: index,
-				title: newTodo,
+				id: id,
+				title: title,
 				body: "",
 				userId: 1
 			}),
@@ -87,12 +81,90 @@ export function Home() {
 		})
 			.then(response => response.json())
 			.then(responseJson => {
-				console.log(responseJson);
-				console.log(responseJson.id);
-				//console.log(todos.find(responseJson.id));
 				let todosArrayCopy = [...todos, responseJson];
 				setTodos(todosArrayCopy);
 			});
+	}
+
+	//FUNCION BORRADO TODO EL ARRAY
+	function DeleteTodoAll() {
+		let id = 0;
+
+		let ArrayCopy = [...todos];
+		if (todos.length > 0) {
+			for (let i = 0; i < todos.length; i++) {
+				id = todos[i].id;
+				fetch(BaseURL + "todos/" + id, {
+					method: "DELETE"
+				}).then(response => {
+					if (response.ok) {
+						ArrayCopy.splice(i, 1);
+					} else {
+						setTodos(ArrayCopy);
+						setDeleteAllResult(" Delete failed");
+						return;
+					}
+				});
+			}
+
+			//let ArrayCopy = [];
+			// if (todos.length > 0) {
+			// 	for (let i = 0; i < todos.length; i++) {
+			// 		id = todos[i].id;
+			// 		fetch(BaseURL + "todos/" + id, {
+			// 			method: "DELETE"
+			// 		}).then(response => {
+			// 			if (!response.ok) {
+			// 				let ArrayCopy = [...todos];
+			// 				ArrayCopy.splice(0, i);
+			// 				setTodos(ArrayCopy);
+			// 				setDeleteAllResult(" Delete failed");
+			// 				return;
+			// 			}
+			// 		});
+			// 	}
+
+			setTodos(ArrayCopy);
+			setDeleteAllResult(" All items have been deleted");
+		} else setDeleteAllResult(" List empty");
+	}
+
+	// despues de borrar se muestra un mensaje que desaparece al 1,5seg
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			setDeleteAllResult("");
+		}, 1500);
+		return () => clearTimeout(timer);
+	}, [deleteAllResult != ""]);
+
+	//FUNCION BORRADO UN ITEM INDIVIDUAL
+
+	function DeleteTodoItem(id) {
+		fetch(BaseURL + "todos/" + id, {
+			method: "DELETE"
+		}).then(response => {
+			if (response.ok) {
+				let todosArrayCopy = [...todos];
+				let arrayPos = todosArrayCopy.findIndex(obj => obj.id == id);
+				todosArrayCopy.splice(arrayPos, 1);
+				setTodos(todosArrayCopy);
+				setDeleteResult("Task " + arrayPos + " has been deleted");
+			} else {
+				setDeleteResult("Unable to delete task " + id);
+			}
+		});
+	}
+	// despues de borrar se muestra un mensaje que desaparece al 1,5seg
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			setDeleteResult("");
+		}, 1500);
+		return () => clearTimeout(timer);
+	}, [deleteResult != ""]);
+
+	//Show save changes o descartar cuando se escribe en un
+	function showUpdateIcon(event) {
+		setUpdateTodo(event.target.value);
 	}
 
 	return (
@@ -105,19 +177,39 @@ export function Home() {
 				}}
 				onKeyDown={saveTodoData}
 			/>
-			{todo}
+			<input
+				type="button"
+				value="Delete All"
+				onClick={event => {
+					DeleteTodoAll();
+				}}
+			/>
+			{deleteAllResult}
 			<ul>
 				{todos.map(todoItem => {
 					return (
-						<li key={todoItem.title}>
+						<li key={todoItem.id}>
 							<input
 								type="text"
 								defaultValue={todoItem.title}
-								onChange={event => {
-									setNewTodo(event.target.value);
-								}}
-								onKeyDown={updateTodoData}
+								onChange={showUpdateIcon}
+								onKeyDown={event =>
+									event.key === "Enter"
+										? UpdateTodoItem(
+												updateTodo,
+												todoItem.id
+										  )
+										: null
+								}
 							/>
+							<input
+								type="button"
+								value="Delete"
+								onClick={event => {
+									DeleteTodoItem(todoItem.id);
+								}}
+							/>
+							{deleteResult}
 						</li>
 					);
 				})}
