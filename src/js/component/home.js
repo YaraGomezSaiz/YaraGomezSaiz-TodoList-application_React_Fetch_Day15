@@ -133,10 +133,6 @@ export function Home() {
 		setTodos(arrayCopy);
 	}
 
-	//LLAMADA A funcion setTimeout
-
-	//setTimeout_useEffect(setDeleteAllResult, 1500);
-
 	return (
 		<div>
 			<div>

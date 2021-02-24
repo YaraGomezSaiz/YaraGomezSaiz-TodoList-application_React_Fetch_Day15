@@ -56,7 +56,9 @@ export default function Task(props) {
 				value="Delete"
 				onClick={event => {
 					props.deleteItem(props.Item.id);
-					setComments("Task " + props.Item.id + " has been deleted");
+					setComments(
+						"  Task " + props.Item.id + " has been deleted"
+					);
 				}}
 			/>
 			{comments}
